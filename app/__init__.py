@@ -1,0 +1,1 @@
+"""Local sentence review application."""

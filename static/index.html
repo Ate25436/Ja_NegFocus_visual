@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>否定文リライト判定</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<main>
+  <header><div><p class="eyebrow">SENTENCE REVIEW</p><h1>否定文リライト判定</h1></div><span id="save-status" role="status">読み込み中…</span></header>
+  <section class="overview" aria-label="判定の進捗">
+    <div class="progress-heading"><strong id="progress-label">— / — 判定済み</strong><span id="completion"></span></div>
+    <progress id="progress" value="0" max="1"></progress>
+    <div class="toolbar"><label>表示 <select id="filter"><option value="all">すべて</option><option value="unreviewed">未判定</option><option value="meaning_ng">意味NG</option><option value="naturalness_ng">不自然</option><option value="any_ng">NG全部</option></select></label><span id="count"></span><label class="auto"><input type="checkbox" id="auto-next">両方の判定後、次の未判定へ</label></div>
+  </section>
+  <div id="error" role="alert" hidden></div>
+  <section id="empty" class="card" hidden>この条件に該当する文はありません。</section>
+  <article id="card" class="card" hidden>
+    <div class="item-heading"><strong id="number"></strong><span id="instance-id"></span></div>
+    <section class="sentence-block"><h2><span class="dot original-dot"></span>元の文 <small>ORIGINAL</small></h2><p id="original" class="sentence"></p></section>
+    <section class="sentence-block rewritten-block"><h2><span class="dot rewritten-dot"></span>書き換え文 <small>REWRITTEN</small></h2><p id="rewritten" class="sentence"></p></section>
+    <p class="legend"><del>削除された文字</del><ins>追加された文字</ins></p>
+    <details id="reference-panel"><summary>参考情報を表示</summary><dl id="reference"></dl></details>
+    <div class="judgments">
+      <fieldset><legend>文意が変わっていないか？ <small>意味保持</small></legend><div class="choices"><button data-field="meaning_preserved" data-value="OK">OK <kbd>1</kbd></button><button data-field="meaning_preserved" data-value="NG">NG <kbd>2</kbd></button><button class="clear" data-field="meaning_preserved" data-value="">解除</button></div></fieldset>
+      <fieldset><legend>文が自然か？ <small>自然性</small></legend><div class="choices"><button data-field="naturalness" data-value="OK">OK <kbd>3</kbd></button><button data-field="naturalness" data-value="NG">NG <kbd>4</kbd></button><button class="clear" data-field="naturalness" data-value="">解除</button></div></fieldset>
+    </div>
+    <label class="comment-label" for="comment">コメント <span>任意・入力後に自動保存</span></label><textarea id="comment" rows="3" placeholder="判定理由や気になった点を記録…"></textarea>
+    <p id="reviewed-at" class="muted"></p>
+  </article>
+  <nav aria-label="文の移動"><button id="previous">← 前へ</button><span id="position"></span><button id="jump">未判定へジャンプ</button><button id="next">次へ →</button></nav>
+  <footer>1 / 2：意味 OK / NG　 ·　 3 / 4：自然 OK / NG　 ·　 ← / →：前後の文<br>判定は元のCSVに自動保存されます。</footer>
+</main>
+<div id="toast" role="status" hidden></div>
+</body>
+</html>
