@@ -1,13 +1,14 @@
 "use strict";
 const $ = id => document.getElementById(id);
 let items = [], current = null, busy = false, commentTimer, toastTimer;
-const complete = item => Boolean(item.meaning_preserved && item.naturalness);
+const complete = item => Boolean(item.meaning_preserved && item.naturalness && item.negation_scope);
 const matches = item => {
   switch ($("filter").value) {
     case "unreviewed": return !complete(item);
     case "meaning_ng": return item.meaning_preserved === "NG";
     case "naturalness_ng": return item.naturalness === "NG";
-    case "any_ng": return item.meaning_preserved === "NG" || item.naturalness === "NG";
+    case "negation_scope_ng": return item.negation_scope === "NG";
+    case "any_ng": return item.meaning_preserved === "NG" || item.naturalness === "NG" || item.negation_scope === "NG";
     default: return true;
   }
 };
@@ -19,9 +20,11 @@ async function api(path, options) {
   return data;
 }
 function error(error) { $("error").textContent = error.message; $("error").hidden = false; }
-function lock(value) {
+function lock(value, keepCommentEditable = false) {
   busy = value;
-  document.querySelectorAll("button, select, textarea, #auto-next").forEach(element => element.disabled = value);
+  document.querySelectorAll("button, select, textarea, #auto-next").forEach(element => {
+    element.disabled = value && !(keepCommentEditable && element.id === "comment");
+  });
   if (!value) navigation();
 }
 function navigation() {
@@ -41,8 +44,9 @@ function overview() {
   const counts = {all: items.length, unreviewed: items.length - reviewed,
     meaning_ng: items.filter(i => i.meaning_preserved === "NG").length,
     naturalness_ng: items.filter(i => i.naturalness === "NG").length,
-    any_ng: items.filter(i => i.meaning_preserved === "NG" || i.naturalness === "NG").length};
-  const labels = {all: "すべて", unreviewed: "未判定", meaning_ng: "意味NG", naturalness_ng: "不自然", any_ng: "NG全部"};
+    negation_scope_ng: items.filter(i => i.negation_scope === "NG").length,
+    any_ng: items.filter(i => i.meaning_preserved === "NG" || i.naturalness === "NG" || i.negation_scope === "NG").length};
+  const labels = {all: "すべて", unreviewed: "未判定", meaning_ng: "意味NG", naturalness_ng: "不自然", negation_scope_ng: "否定範囲NG", any_ng: "NG全部"};
   for (const option of $("filter").options) option.textContent = `${labels[option.value]} (${counts[option.value]})`;
   navigation();
 }
@@ -85,7 +89,7 @@ async function persist(changes) {
   });
   current = result.item;
   Object.assign(items.find(item => item.instance_id === current.instance_id), {
-    meaning_preserved: current.meaning_preserved, naturalness: current.naturalness
+    meaning_preserved: current.meaning_preserved, naturalness: current.naturalness, negation_scope: current.negation_scope
   });
   $("save-status").textContent = "保存済み";
   $("error").hidden = true;
@@ -95,11 +99,15 @@ async function persist(changes) {
 }
 async function flushComment() {
   clearTimeout(commentTimer);
-  if (current && $("comment").value !== current.review_comment) await persist({review_comment: $("comment").value});
+  // Input can continue during autosave; also save edits made while the request was pending.
+  while (current && $("comment").value !== current.review_comment) {
+    await persist({review_comment: $("comment").value});
+    clearTimeout(commentTimer);
+  }
 }
-async function action(fn) {
+async function action(fn, keepCommentEditable = false) {
   if (busy) return;
-  lock(true);
+  lock(true, keepCommentEditable);
   try { await fn(); }
   catch (failure) { $("save-status").textContent = "未保存 / エラー"; error(failure); }
   finally { lock(false); }
@@ -133,7 +141,7 @@ async function judge(field, value) {
 document.querySelectorAll("button[data-field]").forEach(button => button.addEventListener("click", () => judge(button.dataset.field, button.dataset.value)));
 $("comment").addEventListener("input", () => {
   $("save-status").textContent = "未保存…";
-  clearTimeout(commentTimer); commentTimer = setTimeout(() => action(flushComment), 650);
+  clearTimeout(commentTimer); commentTimer = setTimeout(() => action(flushComment, true), 650);
 });
 for (const [id, offset] of [["previous", -1], ["next", 1]]) {
   $(id).addEventListener("click", () => action(async () => {
@@ -155,8 +163,13 @@ $("jump").addEventListener("click", () => action(async () => {
 try { $("auto-next").checked = localStorage.getItem("auto-next") === "true"; } catch (_) {}
 $("auto-next").addEventListener("change", () => { try { localStorage.setItem("auto-next", $("auto-next").checked); } catch (_) {} });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && event.target === $("comment") && !event.isComposing) {
+    event.preventDefault();
+    event.target.blur();
+    return;
+  }
   if (busy || !current || event.ctrlKey || event.altKey || event.metaKey || event.isComposing || /INPUT|TEXTAREA|SELECT|BUTTON|SUMMARY/.test(event.target.tagName)) return;
-  const shortcuts = {"1": ["meaning_preserved", "OK"], "2": ["meaning_preserved", "NG"], "3": ["naturalness", "OK"], "4": ["naturalness", "NG"]};
+  const shortcuts = {"1": ["meaning_preserved", "OK"], "2": ["meaning_preserved", "NG"], "3": ["naturalness", "OK"], "4": ["naturalness", "NG"], "5": ["negation_scope", "OK"], "6": ["negation_scope", "NG"]};
   if (shortcuts[event.key]) { event.preventDefault(); judge(...shortcuts[event.key]); }
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); $(event.key === "ArrowLeft" ? "previous" : "next").click(); }
 });

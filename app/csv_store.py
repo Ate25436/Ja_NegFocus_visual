@@ -11,7 +11,8 @@ import pandas as pd
 from app.diff import sentence_diff
 
 
-REVIEW_COLUMNS = ["meaning_preserved", "naturalness", "review_comment", "reviewed_at"]
+JUDGMENT_COLUMNS = ["meaning_preserved", "naturalness", "negation_scope"]
+REVIEW_COLUMNS = JUDGMENT_COLUMNS + ["review_comment", "reviewed_at"]
 REFERENCE_COLUMNS = [
     "focus_surface", "negation_surface", "focus_class", "arg_types", "toritate",
     "description", "clue", "negation_source_fragment", "negation_replacement",
@@ -41,7 +42,7 @@ class CsvStore:
         for column in REVIEW_COLUMNS:
             if column not in self.frame:
                 self.frame[column] = ""
-        for column in REVIEW_COLUMNS[:2]:
+        for column in JUDGMENT_COLUMNS:
             if not self.frame[column].isin(["", "OK", "NG"]).all():
                 raise ValueError(column + "に不正な判定値があります")
         self.indices = {value: index for index, value in enumerate(ids)}
@@ -58,7 +59,7 @@ class CsvStore:
     def items(self):
         with self.lock:
             return [dict(row, number=index + 1) for index, row in enumerate(
-                self.frame[["instance_id"] + REVIEW_COLUMNS[:2]].to_dict("records")
+                self.frame[["instance_id"] + JUDGMENT_COLUMNS].to_dict("records")
             )]
 
     def detail(self, instance_id):
@@ -76,19 +77,21 @@ class CsvStore:
         with self.lock:
             meaning = self.frame["meaning_preserved"]
             naturalness = self.frame["naturalness"]
-            done = int((meaning.ne("") & naturalness.ne("")).sum())
+            scope = self.frame["negation_scope"]
+            done = int(self.frame[JUDGMENT_COLUMNS].ne("").all(axis=1).sum())
             return {"total": len(self.frame), "reviewed": done,
                     "unreviewed": len(self.frame) - done,
                     "meaning_ng": int(meaning.eq("NG").sum()),
                     "naturalness_ng": int(naturalness.eq("NG").sum()),
-                    "any_ng": int((meaning.eq("NG") | naturalness.eq("NG")).sum())}
+                    "negation_scope_ng": int(scope.eq("NG").sum()),
+                    "any_ng": int(self.frame[JUDGMENT_COLUMNS].eq("NG").any(axis=1).sum())}
 
     def update(self, instance_id, changes):
         with self.lock:
             index = self._index(instance_id)
             if not isinstance(changes, dict) or not changes:
                 raise ValueError("更新する項目を指定してください")
-            if set(changes) - set(REVIEW_COLUMNS[:3]):
+            if set(changes) - set(JUDGMENT_COLUMNS + ["review_comment"]):
                 raise ValueError("更新できない項目が含まれています")
             for key, value in changes.items():
                 if not isinstance(value, str) or (key != "review_comment" and value not in ("", "OK", "NG")):

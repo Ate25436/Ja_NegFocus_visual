@@ -13,7 +13,7 @@
   <section class="overview" aria-label="判定の進捗">
     <div class="progress-heading"><strong id="progress-label">— / — 判定済み</strong><span id="completion"></span></div>
     <progress id="progress" value="0" max="1"></progress>
-    <div class="toolbar"><label>表示 <select id="filter"><option value="all">すべて</option><option value="unreviewed">未判定</option><option value="meaning_ng">意味NG</option><option value="naturalness_ng">不自然</option><option value="any_ng">NG全部</option></select></label><span id="count"></span><label class="auto"><input type="checkbox" id="auto-next">両方の判定後、次の未判定へ</label></div>
+    <div class="toolbar"><label>表示 <select id="filter"><option value="all">すべて</option><option value="unreviewed">未判定</option><option value="meaning_ng">意味NG</option><option value="naturalness_ng">不自然</option><option value="negation_scope_ng">否定範囲NG</option><option value="any_ng">NG全部</option></select></label><span id="count"></span><label class="auto"><input type="checkbox" id="auto-next">3項目の判定後、次の未判定へ</label></div>
   </section>
   <div id="error" role="alert" hidden></div>
   <section id="empty" class="card" hidden>この条件に該当する文はありません。</section>
@@ -26,12 +26,13 @@
     <div class="judgments">
       <fieldset><legend>文意が変わっていないか？ <small>意味保持</small></legend><div class="choices"><button data-field="meaning_preserved" data-value="OK">OK <kbd>1</kbd></button><button data-field="meaning_preserved" data-value="NG">NG <kbd>2</kbd></button><button class="clear" data-field="meaning_preserved" data-value="">解除</button></div></fieldset>
       <fieldset><legend>文が自然か？ <small>自然性</small></legend><div class="choices"><button data-field="naturalness" data-value="OK">OK <kbd>3</kbd></button><button data-field="naturalness" data-value="NG">NG <kbd>4</kbd></button><button class="clear" data-field="naturalness" data-value="">解除</button></div></fieldset>
+      <fieldset><legend>否定範囲が変わっているか？ <small>否定範囲</small></legend><div class="choices"><button data-field="negation_scope" data-value="OK">OK <kbd>5</kbd></button><button data-field="negation_scope" data-value="NG">NG <kbd>6</kbd></button><button class="clear" data-field="negation_scope" data-value="">解除</button></div><p class="muted">OK：変わっている ／ NG：変わっていない</p></fieldset>
     </div>
     <label class="comment-label" for="comment">コメント <span>任意・入力後に自動保存</span></label><textarea id="comment" rows="3" placeholder="判定理由や気になった点を記録…"></textarea>
     <p id="reviewed-at" class="muted"></p>
   </article>
   <nav aria-label="文の移動"><button id="previous">← 前へ</button><span id="position"></span><button id="jump">未判定へジャンプ</button><button id="next">次へ →</button></nav>
-  <footer>1 / 2：意味 OK / NG　 ·　 3 / 4：自然 OK / NG　 ·　 ← / →：前後の文<br>判定は元のCSVに自動保存されます。</footer>
+  <footer>1 / 2：意味 OK / NG　 ·　 3 / 4：自然 OK / NG　 ·　 5 / 6：否定範囲 OK / NG　 ·　 ← / →：前後の文<br>判定は元のCSVに自動保存されます。</footer>
 </main>
 <div id="toast" role="status" hidden></div>
 </body>

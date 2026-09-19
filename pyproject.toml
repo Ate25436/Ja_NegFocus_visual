@@ -1,0 +1,13 @@
+[project]
+name = "ja-negfocus-visual"
+version = "0.1.0"
+description = "Local web app for reviewing Japanese negative sentence rewrites"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "Flask>=3.0,<4",
+    "pandas>=2.2,<3",
+]
+
+[tool.uv]
+package = false

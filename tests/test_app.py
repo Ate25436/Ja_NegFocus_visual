@@ -16,6 +16,9 @@ class ReviewTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / "04_natural.csv"
         shutil.copy2(ROOT / "input" / "04_natural.csv", self.path)
+        # Start with unreviewed data regardless of the user's current annotations.
+        source = pd.read_csv(self.path, encoding="utf-8-sig", dtype=str, keep_default_na=False)
+        source.drop(columns=REVIEW_COLUMNS, errors="ignore").to_csv(self.path, index=False, encoding="utf-8-sig")
         self.original_bytes = self.path.read_bytes()
         self.original = pd.read_csv(self.path, encoding="utf-8-sig", dtype=str, keep_default_na=False)
         self.app = create_app(self.path, backup_count=2, backup_interval=0)
@@ -38,13 +41,13 @@ class ReviewTests(unittest.TestCase):
     def test_roundtrip_preserves_every_original_cell(self):
         comment = '日本語, "引用"\n次の行 <script>alert(1)</script>'
         self.assertEqual(self.client.put(self.url + "/review", json={"meaning_preserved": "NG"}).status_code, 200)
-        result = self.client.put(self.url + "/review", json={"naturalness": "OK", "review_comment": comment})
+        result = self.client.put(self.url + "/review", json={"naturalness": "OK", "negation_scope": "OK", "review_comment": comment})
         self.assertTrue(result.json["saved"])
         self.assertEqual(result.json["item"]["meaning_preserved"], "NG")
         self.assertTrue(result.json["item"]["reviewed_at"])
         frame = pd.read_csv(self.path, encoding="utf-8-sig", dtype=str, keep_default_na=False)
         pd.testing.assert_frame_equal(frame[self.original.columns], self.original)
-        self.assertEqual(list(frame.columns[-4:]), REVIEW_COLUMNS)
+        self.assertEqual(list(frame.columns[-len(REVIEW_COLUMNS):]), REVIEW_COLUMNS)
         self.assertTrue(self.path.read_bytes().startswith(b"\xef\xbb\xbf"))
         self.assertEqual(CsvStore(self.path).detail(self.id)["review_comment"], comment)
         progress = self.client.get("/api/progress").json
@@ -73,12 +76,54 @@ class ReviewTests(unittest.TestCase):
 
     def test_validation(self):
         for changes in ({"meaning_preserved": "maybe"}, {"naturalness": None}, {"review_comment": 1},
+                        {"negation_scope": "maybe"}, {"negation_scope": True}, {"negation_scope": None},
                         {"original_sentence": "changed"}, [], {}, None):
             response = self.client.put(self.url + "/review", json=changes)
             self.assertIn(response.status_code, (400, 415))
         self.assertEqual(self.client.get("/api/items/missing").status_code, 404)
         self.assertEqual(self.client.put("/api/items/missing/review", json={"naturalness": "OK"}).status_code, 404)
         self.assertEqual(self.path.read_bytes(), self.original_bytes)
+
+    def test_scope_required_for_completion_and_counted_in_ng(self):
+        self.store.update(self.id, {"meaning_preserved": "OK", "naturalness": "OK"})
+        self.assertEqual(self.store.progress()["reviewed"], 0)
+        for value in ("NG", "OK", ""):
+            response = self.client.put(self.url + "/review", json={"negation_scope": value})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json["item"]["negation_scope"], value)
+            self.assertEqual(self.client.get("/api/items").json[0]["negation_scope"], value)
+            self.assertEqual(CsvStore(self.path).detail(self.id)["negation_scope"], value)
+            progress = self.client.get("/api/progress").json
+            self.assertEqual(progress["reviewed"], int(bool(value)))
+            self.assertEqual(progress["unreviewed"], len(self.original) - int(bool(value)))
+            self.assertEqual(progress["negation_scope_ng"], int(value == "NG"))
+            self.assertEqual(progress["any_ng"], int(value == "NG"))
+
+    def test_existing_reviews_survive_new_column(self):
+        legacy = self.original.copy()
+        for column in ("meaning_preserved", "naturalness", "review_comment", "reviewed_at"):
+            legacy[column] = ""
+        legacy.loc[0, ["meaning_preserved", "naturalness", "review_comment", "reviewed_at"]] = [
+            "OK", "NG", "existing comment", "2026-09-17T12:00:00+09:00"]
+        legacy.to_csv(self.path, index=False, encoding="utf-8-sig")
+        before = self.path.read_bytes()
+        store = CsvStore(self.path)
+        self.assertEqual(store.detail(self.id)["negation_scope"], "")
+        self.assertEqual(store.progress()["reviewed"], 0)
+        self.assertEqual(self.path.read_bytes(), before)
+        store.update(self.id, {"negation_scope": "OK"})
+        saved = pd.read_csv(self.path, encoding="utf-8-sig", dtype=str, keep_default_na=False)
+        columns = legacy.columns.drop("reviewed_at")
+        pd.testing.assert_frame_equal(saved[columns], legacy[columns])
+        self.assertEqual(CsvStore(self.path).detail(self.id)["negation_scope"], "OK")
+        self.assertEqual(store.progress()["reviewed"], 1)
+
+    def test_invalid_scope_in_csv_rejected(self):
+        frame = self.original.copy()
+        frame["negation_scope"] = "invalid"
+        frame.to_csv(self.path, index=False, encoding="utf-8-sig")
+        with self.assertRaises(ValueError):
+            CsvStore(self.path)
 
     def test_reference_columns_are_dynamic(self):
         frame = self.original.copy()
