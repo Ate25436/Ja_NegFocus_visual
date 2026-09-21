@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 input/.backup/
 input/*.tmp
+
+investigation/
