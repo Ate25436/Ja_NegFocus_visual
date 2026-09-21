@@ -70,6 +70,10 @@ class CsvStore:
                 **{key: row[key] for key in ["instance_id", "original_sentence", "rewritten_sentence"] + REVIEW_COLUMNS},
                 "number": index + 1,
                 "diff": sentence_diff(row["original_sentence"], row["rewritten_sentence"]),
+                "context": {
+                    "previous": row.get("context_prev_sentences", ""),
+                    "next": row.get("context_next_sentences", ""),
+                },
                 "reference": {key: row[key] for key in self.reference_columns},
             }
 

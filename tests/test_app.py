@@ -34,6 +34,10 @@ class ReviewTests(unittest.TestCase):
         item = self.client.get(self.url).json
         for side in ("original", "rewritten"):
             self.assertEqual("".join(part[side] for part in item["diff"]), item[side + "_sentence"])
+        self.assertEqual(item["context"], {
+            "previous": self.original.iloc[0]["context_prev_sentences"],
+            "next": self.original.iloc[0]["context_next_sentences"],
+        })
         self.assertTrue(all(self.original[key].nunique(dropna=False) > 1 for key in item["reference"]))
         self.assertNotIn("rewrite_rule_id", item["reference"])
         self.assertEqual(self.path.read_bytes(), self.original_bytes)

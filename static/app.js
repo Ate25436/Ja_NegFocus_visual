@@ -56,11 +56,21 @@ function reviewState() {
   });
   $("reviewed-at").textContent = current.reviewed_at ? `最終保存：${new Date(current.reviewed_at).toLocaleString("ja-JP")}` : "まだ判定されていません";
 }
+function contextText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+function renderContext(id, value, emptyMessage) {
+  const element = $(id), text = contextText(value);
+  element.textContent = text || emptyMessage;
+  element.classList.toggle("context-empty", !text);
+}
 function render() {
   $("card").hidden = !current; $("empty").hidden = Boolean(current);
   if (!current) { navigation(); return; }
   $("number").textContent = `#${String(current.number).padStart(2, "0")}`;
   $("instance-id").textContent = current.instance_id;
+  renderContext("context-previous", current.context?.previous, "前の文脈はありません");
+  renderContext("context-next", current.context?.next, "後の文脈はありません");
   $("original").replaceChildren(); $("rewritten").replaceChildren();
   for (const part of current.diff) {
     for (const side of ["original", "rewritten"]) {

@@ -19,13 +19,20 @@
   <section id="empty" class="card" hidden>この条件に該当する文はありません。</section>
   <article id="card" class="card" hidden>
     <div class="item-heading"><strong id="number"></strong><span id="instance-id"></span></div>
-    <section class="sentence-block"><h2><span class="dot original-dot"></span>元の文 <small>ORIGINAL</small></h2><p id="original" class="sentence"></p></section>
-    <section class="sentence-block rewritten-block"><h2><span class="dot rewritten-dot"></span>書き換え文 <small>REWRITTEN</small></h2><p id="rewritten" class="sentence"></p></section>
+    <section class="context-flow" aria-labelledby="context-heading">
+      <div class="context-title-row"><div><p class="section-kicker">CONTEXT</p><h2 id="context-heading">文脈と対象文</h2></div><p>前後の文脈に照らして判定してください</p></div>
+      <div class="context-segment"><span class="context-label">前の文脈</span><p id="context-previous" class="context-text"></p></div>
+      <div class="target-comparison">
+        <section class="sentence-block"><h2><span class="dot original-dot"></span>元の文 <small>ORIGINAL</small></h2><p id="original" class="sentence"></p></section>
+        <section class="sentence-block rewritten-block"><h2><span class="dot rewritten-dot"></span>書き換え文 <small>REWRITTEN</small></h2><p id="rewritten" class="sentence"></p></section>
+      </div>
+      <div class="context-segment"><span class="context-label">後の文脈</span><p id="context-next" class="context-text"></p></div>
+    </section>
     <p class="legend"><del>削除された文字</del><ins>追加された文字</ins></p>
     <details id="reference-panel"><summary>参考情報を表示</summary><dl id="reference"></dl></details>
     <div class="judgments">
       <fieldset><legend>文意が変わっていないか？ <small>意味保持</small></legend><div class="choices"><button data-field="meaning_preserved" data-value="OK">OK <kbd>1</kbd></button><button data-field="meaning_preserved" data-value="NG">NG <kbd>2</kbd></button><button class="clear" data-field="meaning_preserved" data-value="">解除</button></div></fieldset>
-      <fieldset><legend>文が自然か？ <small>自然性</small></legend><div class="choices"><button data-field="naturalness" data-value="OK">OK <kbd>3</kbd></button><button data-field="naturalness" data-value="NG">NG <kbd>4</kbd></button><button class="clear" data-field="naturalness" data-value="">解除</button></div></fieldset>
+      <fieldset><legend>書き換え後の文が自然か？ <small>自然性</small></legend><div class="choices"><button data-field="naturalness" data-value="OK">OK <kbd>3</kbd></button><button data-field="naturalness" data-value="NG">NG <kbd>4</kbd></button><button class="clear" data-field="naturalness" data-value="">解除</button></div></fieldset>
       <fieldset><legend>否定範囲が変わっているか？ <small>否定範囲</small></legend><div class="choices"><button data-field="negation_scope" data-value="OK">OK <kbd>5</kbd></button><button data-field="negation_scope" data-value="NG">NG <kbd>6</kbd></button><button class="clear" data-field="negation_scope" data-value="">解除</button></div><p class="muted">OK：変わっている ／ NG：変わっていない</p></fieldset>
     </div>
     <label class="comment-label" for="comment">コメント <span>任意・入力後に自動保存</span></label><textarea id="comment" rows="3" placeholder="判定理由や気になった点を記録…"></textarea>
