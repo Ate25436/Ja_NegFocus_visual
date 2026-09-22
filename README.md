@@ -45,12 +45,12 @@ uv run app/server.py
 
 ## API
 
-| メソッド | パス | 内容 |
-|---|---|---|
-| GET | `/api/items` | ID・行番号・判定値の配列 |
-| GET | `/api/items/<instance_id>` | 文・文字差分・参考情報・判定値 |
-| PUT | `/api/items/<instance_id>/review` | 判定・コメントの部分更新。`{item, saved: true}` を返す |
-| GET | `/api/progress` | 全件数・判定済み・未判定・各NG件数 |
+| メソッド | パス                                | 内容                                                     |
+| -------- | ----------------------------------- | -------------------------------------------------------- |
+| GET      | `/api/items`                      | ID・行番号・判定値の配列                                 |
+| GET      | `/api/items/<instance_id>`        | 文・文字差分・参考情報・判定値                           |
+| PUT      | `/api/items/<instance_id>/review` | 判定・コメントの部分更新。`{item, saved: true}` を返す |
+| GET      | `/api/progress`                   | 全件数・判定済み・未判定・各NG件数                       |
 
 PUTは `meaning_preserved` / `naturalness` / `negation_scope`（`"OK"`, `"NG"`, `""`）と `review_comment`（文字列）を受け付けます。未知のIDは404、不正な更新は400、保存失敗は500を返します。
 
